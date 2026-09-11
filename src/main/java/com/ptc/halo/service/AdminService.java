@@ -4,6 +4,7 @@ package com.ptc.halo.service;
 import com.ptc.halo.dtoRequest.*;
 import com.ptc.halo.dtoResponse.*;
 import com.ptc.halo.entity.*;
+import com.ptc.halo.enums.ActivityType;
 import com.ptc.halo.enums.Role;
 import com.ptc.halo.enums.Status;
 import com.ptc.halo.repository.*;
@@ -46,7 +47,7 @@ public class AdminService {
 
 
 
-    public ProfessorsResponse createProfessor(ProfessorRequest request){
+    public ProfessorsResponse createProfessor(ProfessorRequest request, UserEntity admin){
 
         if(userRepository.existsByEmail(request.getEmail())){
             throw new RuntimeException("Email already exists");
@@ -75,6 +76,12 @@ public class AdminService {
 
         professorRepository.save(profile);
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.ACCOUNT,
+                "Created Professor account: "
+                        + savedProfessor.getEmail()
+        );
 
         ProfessorsResponse response =
                 new ProfessorsResponse();
@@ -128,8 +135,8 @@ public class AdminService {
     }
     public ProfessorResponse updateProfessor(
             Long id,
-            ProfessorUpdateRequest request
-    ){
+            ProfessorUpdateRequest request,
+            UserEntity admin){
 
         ProfessorEntity professor = professorRepository
                 .findByUserId(id)
@@ -143,6 +150,12 @@ public class AdminService {
 
         professorRepository.save(professor);
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.ACCOUNT,
+                "Updated Professor account: "
+                        + professor.getUser().getEmail()
+        );
 
         ProfessorResponse response = new ProfessorResponse();
 
@@ -154,7 +167,7 @@ public class AdminService {
 
         return response;
     }
-    public ProfessorResponse changeProfessorStatus(Long id){
+    public ProfessorResponse changeProfessorStatus(Long id, UserEntity admin){
 
         UserEntity professorUser = userRepository.findById(id)
                 .orElseThrow(() ->
@@ -175,6 +188,14 @@ public class AdminService {
 
         UserEntity updatedUser = userRepository.save(professorUser);
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.ACCOUNT,
+                "Changed Professor status to "
+                        + updatedUser.getStatus()
+                        + ": "
+                        + updatedUser.getEmail()
+        );
 
         ProfessorEntity professor = professorRepository.findByUserId(id)
                 .orElseThrow(() ->
@@ -217,7 +238,7 @@ public class AdminService {
     public StudentListResponse viewStudentById(Long id){
 
         StudentProfileEntity student =
-                studentProfileRepository.findByUser_Id(id)
+                studentProfileRepository.findByUserId(id)
                         .orElseThrow(() ->
                                 new RuntimeException("Student not found")
                         );
@@ -236,7 +257,7 @@ public class AdminService {
 
         return response;
     }
-    public StudentListResponse changeStudentStatus(Long id){
+    public StudentListResponse changeStudentStatus(Long id, UserEntity admin){
 
         UserEntity student = userRepository.findById(id)
                 .orElseThrow(() ->
@@ -256,8 +277,17 @@ public class AdminService {
 
         UserEntity updatedStudent = userRepository.save(student);
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.ACCOUNT,
+                "Changed Student status to "
+                        + updatedStudent.getStatus()
+                        + ": "
+                        + updatedStudent.getEmail()
+        );
+
         StudentProfileEntity studentProfile =
-                studentProfileRepository.findByUser_Id(id)
+                studentProfileRepository.findByUserId(id)
                         .orElseThrow(() ->
                                 new RuntimeException("Student profile not found")
                         );
@@ -276,10 +306,10 @@ public class AdminService {
     }
     public StudentListResponse updateStudent(
             Long id,
-            StudentUpdateRequest request
-    ){
+            StudentUpdateRequest request,
+            UserEntity admin){
 
-        StudentProfileEntity studentProfile = studentProfileRepository.findByUser_Id(id)
+        StudentProfileEntity studentProfile = studentProfileRepository.findByUserId(id)
                         .orElseThrow(() -> new RuntimeException("Student not found"));
 
 
@@ -294,6 +324,12 @@ public class AdminService {
 
         StudentProfileEntity updatedProfile = studentProfileRepository.save(studentProfile);
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.ACCOUNT,
+                "Updated Student account: "
+                        + updatedUser.getEmail()
+        );
 
         StudentListResponse response = new StudentListResponse();
 
@@ -309,8 +345,8 @@ public class AdminService {
     }
 
     public SubjectResponse createSubject(
-            SubjectRequest request
-    ){
+            SubjectRequest request,
+            UserEntity admin){
 
         if(subjectRepository.findBySubjectCode(request.getSubjectCode()).isPresent()){
             throw new RuntimeException("Subject code already exists");
@@ -328,6 +364,13 @@ public class AdminService {
         subject.setYearLevel(request.getYearLevel());
 
         SubjectEntity savedSubject = subjectRepository.save(subject);
+
+        activityLogService.createLog(
+                admin,
+                ActivityType.MODULE,
+                "Created subject: "
+                        + savedSubject.getSubjectName()
+        );
 
         SubjectResponse response = new SubjectResponse();
 
@@ -383,8 +426,8 @@ public class AdminService {
     }
     public SubjectResponse updateSubject(
             Long id,
-            SubjectUpdateRequest request
-    ){
+            SubjectUpdateRequest request,
+            UserEntity admin){
 
         SubjectEntity subject =
                 subjectRepository.findById(id)
@@ -417,6 +460,13 @@ public class AdminService {
                 subjectRepository.save(subject);
 
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.MODULE,
+                "Updated subject: "
+                        + updatedSubject.getSubjectName()
+        );
+
         SubjectResponse response =
                 new SubjectResponse();
 
@@ -429,7 +479,7 @@ public class AdminService {
 
         return response;
     }
-    public void deleteSubject(Long id){
+    public void deleteSubject(Long id, UserEntity admin){
 
         SubjectEntity subject =
                 subjectRepository.findById(id)
@@ -437,13 +487,22 @@ public class AdminService {
                                 new RuntimeException("Subject not found")
                         );
 
+        String subjectName =
+                subject.getSubjectName();
 
         subjectRepository.delete(subject);
+
+        activityLogService.createLog(
+                admin,
+                ActivityType.MODULE,
+                "Deleted subject: "
+                        + subjectName
+        );
     }
     public WeekResponse createWeek(
             Long subjectId,
-            WeekRequest request
-    ){
+            WeekRequest request,
+            UserEntity admin){
 
         SubjectEntity subject =
                 subjectRepository.findById(subjectId)
@@ -461,6 +520,15 @@ public class AdminService {
 
         WeekEntity savedWeek =
                 weekRepository.save(week);
+
+        activityLogService.createLog(
+                admin,
+                ActivityType.MODULE,
+                "Created Week "
+                        + savedWeek.getWeekNumber()
+                        + ": "
+                        + savedWeek.getTitle()
+        );
 
         WeekResponse response =
                 new WeekResponse();
@@ -517,8 +585,8 @@ public class AdminService {
     }
     public WeekResponse updateWeek(
             Long id,
-            WeekUpdateRequest request
-    ){
+            WeekUpdateRequest request,
+            UserEntity admin){
 
         WeekEntity week =
                 weekRepository.findById(id)
@@ -530,6 +598,15 @@ public class AdminService {
 
         WeekEntity updatedWeek = weekRepository.save(week);
 
+        activityLogService.createLog(
+                admin,
+                ActivityType.MODULE,
+                "Updated Week "
+                        + updatedWeek.getWeekNumber()
+                        + ": "
+                        + updatedWeek.getTitle()
+        );
+
         WeekResponse response = new WeekResponse();
 
         response.setId(updatedWeek.getId());
@@ -539,7 +616,7 @@ public class AdminService {
 
         return response;
     }
-    public void deleteWeek(Long id){
+    public void deleteWeek(Long id, UserEntity admin){
 
         WeekEntity week =
                 weekRepository.findById(id)
@@ -547,12 +624,22 @@ public class AdminService {
                                 new RuntimeException("Week not found")
                         );
 
+        var weekNumber =
+                week.getWeekNumber();
+
+        String weekTitle =
+                week.getTitle();
+
         weekRepository.delete(week);
+
+        activityLogService.createLog(
+                admin,
+                ActivityType.MODULE,
+                "Deleted Week "
+                        + weekNumber
+                        + ": "
+                        + weekTitle
+        );
     }
-
-   // Update Student (optional)
-   // Delete Student (not recommended)
-   // Student Progress (later)
-
 
 }

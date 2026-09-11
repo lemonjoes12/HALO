@@ -8,6 +8,7 @@ import com.ptc.halo.entity.UserEntity;
 import com.ptc.halo.repository.UserRepository;
 import com.ptc.halo.service.AssessmentService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
@@ -51,13 +52,29 @@ public class StudentAssessmentController {
         return ResponseEntity.ok(response);
     }
     @GetMapping("/{moduleId}")
-    public ResponseEntity<AssessmentResponse> getAssessment(
-            @PathVariable Long moduleId) {
+    @PreAuthorize("hasRole('STUDENT')")
+    public ResponseEntity<AssessmentResponse>
+    getAssessment(
+            @PathVariable Long moduleId,
+            Authentication authentication) {
 
-        AssessmentResponse response =
-                assessmentService.getAssessment(moduleId);
+        UserEntity student =
+                userRepository
+                        .findByEmail(
+                                authentication.getName()
+                        )
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
 
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(
+                assessmentService.getAssessment(
+                        moduleId,
+                        student
+                )
+        );
     }
     @PostMapping("/start/{moduleId}")
     public ResponseEntity<AssessmentAttemptResponse> startAttempt(

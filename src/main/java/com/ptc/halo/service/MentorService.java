@@ -31,12 +31,13 @@ public class MentorService {
     private final MentorSessionRepository mentorSessionRepository;
     private final MentorMessageRepository mentorMessageRepository;
     private final ObjectMapper objectMapper;
+    private final StudentLearningProgressionService progressionService;
 
     public MentorService(
             ChatClient.Builder chatClientBuilder,
             AiLearningModuleRepository aiLearningModuleRepository,
             MentorSessionRepository mentorSessionRepository,
-            MentorMessageRepository mentorMessageRepository, ObjectMapper objectMapper) {
+            MentorMessageRepository mentorMessageRepository, ObjectMapper objectMapper, StudentLearningProgressionService progressionService) {
 
         this.chatClient = chatClientBuilder.build();
         this.aiLearningModuleRepository =
@@ -46,11 +47,17 @@ public class MentorService {
         this.mentorMessageRepository =
                 mentorMessageRepository;
         this.objectMapper = objectMapper;
+        this.progressionService = progressionService;
     }
 
     public MentorSessionResponse startSession(
             Long moduleId,
             UserEntity student) {
+
+        progressionService.validateModuleAccess(
+                moduleId,
+                student
+        );
 
         AiLearningModuleEntity module =
                 aiLearningModuleRepository
@@ -216,6 +223,11 @@ public class MentorService {
 
         AiLearningModuleEntity module =
                 session.getModule();
+
+        progressionService.validateModuleAccess(
+                module.getId(),
+                student
+        );
 
         if (module.getStatus() != LessonStatus.APPROVED) {
 
@@ -753,6 +765,11 @@ public class MentorService {
     public MentorConversationResponse openSession(
             Long moduleId,
             UserEntity student) {
+
+        progressionService.validateModuleAccess(
+                moduleId,
+                student
+        );
 
         AiLearningModuleEntity module =
                 aiLearningModuleRepository.findById(moduleId)

@@ -2,9 +2,15 @@ package com.ptc.halo.controller;
 
 import com.ptc.halo.dtoRequest.*;
 import com.ptc.halo.dtoResponse.*;
+import com.ptc.halo.entity.UserEntity;
+import com.ptc.halo.enums.ActivityType;
+import com.ptc.halo.enums.Role;
+import com.ptc.halo.repository.UserRepository;
+import com.ptc.halo.service.ActivityLogService;
 import com.ptc.halo.service.AdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
@@ -13,19 +19,31 @@ import java.util.List;
 public class AdminController {
 
     private final AdminService adminService;
+    private final UserRepository userRepository;
+    private final ActivityLogService activityLogService;
 
 
-    public AdminController(AdminService adminService) {
+    public AdminController(AdminService adminService, UserRepository userRepository, ActivityLogService activityLogService) {
         this.adminService = adminService;
+        this.userRepository = userRepository;
+        this.activityLogService = activityLogService;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/create-professor")
     public ResponseEntity<ProfessorsResponse> createProfessor(
-            @RequestBody ProfessorRequest professorRequest
-    ){
+            @RequestBody ProfessorRequest professorRequest,
+            Authentication authentication
+    ) {
+
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         ProfessorsResponse response =
-                adminService.createProfessor(professorRequest);
+                adminService.createProfessor(
+                        professorRequest,
+                        admin
+                );
 
         return ResponseEntity.ok(response);
     }
@@ -51,21 +69,36 @@ public class AdminController {
     @PutMapping("/professors/{id}")
     public ResponseEntity<ProfessorResponse> updateProfessor(
             @PathVariable Long id,
-            @RequestBody ProfessorUpdateRequest request
+            @RequestBody ProfessorUpdateRequest request,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.updateProfessor(id, request)
+                adminService.updateProfessor(
+                        id,
+                        request,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/professors/{id}/status")
     public ResponseEntity<ProfessorResponse> changeProfessorStatus(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.changeProfessorStatus(id)
+                adminService.changeProfessorStatus(
+                        id,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
@@ -89,32 +122,54 @@ public class AdminController {
     @PreAuthorize("hasRole('ADMIN')")
     @PatchMapping("/students/{id}/status")
     public ResponseEntity<StudentListResponse> changeStudentStatus(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.changeStudentStatus(id)
+                adminService.changeStudentStatus(
+                        id,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
     @PutMapping("/students/{id}")
     public ResponseEntity<StudentListResponse> updateStudent(
             @PathVariable Long id,
-            @RequestBody StudentUpdateRequest request
+            @RequestBody StudentUpdateRequest request,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.updateStudent(id, request)
+                adminService.updateStudent(
+                        id,
+                        request,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
     @PostMapping("/subjects")
     public ResponseEntity<SubjectResponse> createSubject(
-            @RequestBody SubjectRequest request
+            @RequestBody SubjectRequest request,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.createSubject(request)
+                adminService.createSubject(
+                        request,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
@@ -139,20 +194,35 @@ public class AdminController {
     @PutMapping("/subjects/{id}")
     public ResponseEntity<SubjectResponse> updateSubject(
             @PathVariable Long id,
-            @RequestBody SubjectUpdateRequest request
+            @RequestBody SubjectUpdateRequest request,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.updateSubject(id, request)
+                adminService.updateSubject(
+                        id,
+                        request,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/subjects/{id}")
     public ResponseEntity<String> deleteSubject(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ){
 
-        adminService.deleteSubject(id);
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
+        adminService.deleteSubject(
+                id,
+                admin
+        );
 
         return ResponseEntity.ok(
                 "Subject deleted successfully"
@@ -162,11 +232,19 @@ public class AdminController {
     @PostMapping("/subjects/{subjectId}/weeks")
     public ResponseEntity<WeekResponse> createWeek(
             @PathVariable Long subjectId,
-            @RequestBody WeekRequest request
+            @RequestBody WeekRequest request,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.createWeek(subjectId, request)
+                adminService.createWeek(
+                        subjectId,
+                        request,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
@@ -193,24 +271,72 @@ public class AdminController {
     @PutMapping("/weeks/{id}")
     public ResponseEntity<WeekResponse> updateWeek(
             @PathVariable Long id,
-            @RequestBody WeekUpdateRequest request
+            @RequestBody WeekUpdateRequest request,
+            Authentication authentication
     ){
 
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
         return ResponseEntity.ok(
-                adminService.updateWeek(id, request)
+                adminService.updateWeek(
+                        id,
+                        request,
+                        admin
+                )
         );
     }
     @PreAuthorize("hasRole('ADMIN')")
     @DeleteMapping("/weeks/{id}")
     public ResponseEntity<String> deleteWeek(
-            @PathVariable Long id
+            @PathVariable Long id,
+            Authentication authentication
     ){
 
-        adminService.deleteWeek(id);
+        UserEntity admin =
+                getCurrentAdmin(authentication);
+
+        adminService.deleteWeek(
+                id,
+                admin
+        );
 
         return ResponseEntity.ok(
                 "Week deleted successfully"
         );
+    }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/activity-logs")
+    public ResponseEntity<List<ActivityLogResponse>>
+    getActivityLogs(
+
+            @RequestParam(required = false)
+            Role role,
+
+            @RequestParam(
+                    name = "type",
+                    required = false
+            )
+            ActivityType activityType
+    ){
+
+        return ResponseEntity.ok(
+                activityLogService.getLogs(
+                        role,
+                        activityType
+                )
+        );
+    }
+    private UserEntity getCurrentAdmin(
+            Authentication authentication) {
+
+        return userRepository
+                .findByEmail(authentication.getName())
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "Admin not found"
+                        )
+                );
     }
 
 }

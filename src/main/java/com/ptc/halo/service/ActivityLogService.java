@@ -4,6 +4,7 @@ import com.ptc.halo.dtoResponse.ActivityLogResponse;
 import com.ptc.halo.entity.ActivityLogEntity;
 import com.ptc.halo.entity.UserEntity;
 import com.ptc.halo.enums.ActivityType;
+import com.ptc.halo.enums.Role;
 import com.ptc.halo.repository.ActivityLogRepository;
 import org.springframework.stereotype.Service;
 
@@ -76,6 +77,68 @@ public class ActivityLogService {
                             log.getAction()
                     );
 
+                    response.setCreatedAt(
+                            log.getCreatedAt()
+                    );
+
+                    return response;
+                })
+                .toList();
+    }
+    public List<ActivityLogResponse> getLogs(
+            Role role,
+            ActivityType activityType) {
+
+        List<ActivityLogEntity> logs;
+
+        if (role != null && activityType != null) {
+
+            logs = activityLogRepository
+                    .findByUser_RoleAndActivityTypeOrderByCreatedAtDesc(
+                            role,
+                            activityType
+                    );
+
+        } else if (role != null) {
+
+            logs = activityLogRepository
+                    .findByUser_RoleOrderByCreatedAtDesc(role);
+
+        } else if (activityType != null) {
+
+            logs = activityLogRepository
+                    .findByActivityTypeOrderByCreatedAtDesc(
+                            activityType
+                    );
+
+        } else {
+
+            logs = activityLogRepository
+                    .findAllByOrderByCreatedAtDesc();
+        }
+
+        return logs.stream()
+                .map(log -> {
+
+                    ActivityLogResponse response =
+                            new ActivityLogResponse();
+
+                    response.setId(log.getId());
+                    response.setUserName(
+                            log.getUser().getName()
+                    );
+                    response.setUserEmail(
+                            log.getUser().getEmail()
+                    );
+                    response.setUserRole(
+                            log.getUser().getRole()
+                    );
+                    response.setActivityType(
+                            log.getActivityType()
+                    );
+                    response.setAction(
+                            log.getAction()
+                    );
                     response.setCreatedAt(
                             log.getCreatedAt()
                     );

@@ -29,12 +29,13 @@ public class AssessmentService {
     private final StudentModuleProgressRepository studentModuleProgressRepository;
     private final BadgeService badgeService;
     private final ActivityLogService activityLogService;
+    private final StudentLearningProgressionService progressionService;
 
     public AssessmentService(
             AssessmentRepository assessmentRepository,
             AssessmentQuestionRepository questionRepository,
             AiLearningModuleRepository moduleRepository,
-            AssessmentAiService assessmentAiService, AssessmentAttemptRepository assessmentAttemptRepository, StudentAnswerRepository studentAnswerRepository, StudentModuleProgressRepository studentModuleProgressRepository, BadgeService badgeService, ActivityLogService activityLogService) {
+            AssessmentAiService assessmentAiService, AssessmentAttemptRepository assessmentAttemptRepository, StudentAnswerRepository studentAnswerRepository, StudentModuleProgressRepository studentModuleProgressRepository, BadgeService badgeService, ActivityLogService activityLogService, StudentLearningProgressionService progressionService) {
 
         this.assessmentRepository = assessmentRepository;
         this.questionRepository = questionRepository;
@@ -45,6 +46,7 @@ public class AssessmentService {
         this.studentModuleProgressRepository = studentModuleProgressRepository;
         this.badgeService = badgeService;
         this.activityLogService = activityLogService;
+        this.progressionService = progressionService;
     }
 
     @Transactional
@@ -146,7 +148,14 @@ public class AssessmentService {
     }
 
     @Transactional(readOnly = true)
-    public AssessmentResponse getAssessment(Long moduleId) {
+    public AssessmentResponse getAssessment(
+            Long moduleId,
+            UserEntity student) {
+
+        progressionService.validateModuleAccess(
+                moduleId,
+                student
+        );
 
         AssessmentEntity assessment =
                 assessmentRepository.findByModuleId(moduleId)
@@ -209,6 +218,11 @@ public class AssessmentService {
     public AssessmentAttemptEntity startAttempt(
             Long moduleId,
             UserEntity student) {
+
+        progressionService.validateModuleAccess(
+                moduleId,
+                student
+        );
 
         AssessmentEntity assessment =
                 assessmentRepository.findByModuleId(moduleId)
@@ -451,6 +465,11 @@ public class AssessmentService {
             Long moduleId,
             UserEntity student) {
 
+        progressionService.validateModuleAccess(
+                moduleId,
+                student
+        );
+
         AssessmentEntity assessment =
                 assessmentRepository.findByModuleId(moduleId)
                         .orElseThrow(() ->
@@ -572,6 +591,11 @@ public class AssessmentService {
     public AssessmentStatusResponse getAssessmentStatus(
             Long moduleId,
             UserEntity student) {
+
+        progressionService.validateModuleAccess(
+                moduleId,
+                student
+        );
 
         AssessmentStatusResponse response =
                 new AssessmentStatusResponse();
