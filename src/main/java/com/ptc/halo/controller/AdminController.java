@@ -8,6 +8,7 @@ import com.ptc.halo.enums.Role;
 import com.ptc.halo.repository.UserRepository;
 import com.ptc.halo.service.ActivityLogService;
 import com.ptc.halo.service.AdminService;
+import com.ptc.halo.service.ProfileService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -21,12 +22,14 @@ public class AdminController {
     private final AdminService adminService;
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
+    private final ProfileService profileService;
 
 
-    public AdminController(AdminService adminService, UserRepository userRepository, ActivityLogService activityLogService) {
+    public AdminController(AdminService adminService, UserRepository userRepository, ActivityLogService activityLogService, ProfileService profileService) {
         this.adminService = adminService;
         this.userRepository = userRepository;
         this.activityLogService = activityLogService;
+        this.profileService = profileService;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -155,156 +158,7 @@ public class AdminController {
                 )
         );
     }
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/subjects")
-    public ResponseEntity<SubjectResponse> createSubject(
-            @RequestBody SubjectRequest request,
-            Authentication authentication
-    ){
 
-        UserEntity admin =
-                getCurrentAdmin(authentication);
-
-        return ResponseEntity.ok(
-                adminService.createSubject(
-                        request,
-                        admin
-                )
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/subjects")
-    public ResponseEntity<List<SubjectResponse>> viewAllSubjects(){
-
-        return ResponseEntity.ok(
-                adminService.viewAllSubjects()
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/subjects/{id}")
-    public ResponseEntity<SubjectResponse> viewSubjectById(
-            @PathVariable Long id
-    ){
-
-        return ResponseEntity.ok(
-                adminService.viewSubjectById(id)
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/subjects/{id}")
-    public ResponseEntity<SubjectResponse> updateSubject(
-            @PathVariable Long id,
-            @RequestBody SubjectUpdateRequest request,
-            Authentication authentication
-    ){
-
-        UserEntity admin =
-                getCurrentAdmin(authentication);
-
-        return ResponseEntity.ok(
-                adminService.updateSubject(
-                        id,
-                        request,
-                        admin
-                )
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/subjects/{id}")
-    public ResponseEntity<String> deleteSubject(
-            @PathVariable Long id,
-            Authentication authentication
-    ){
-
-        UserEntity admin =
-                getCurrentAdmin(authentication);
-
-        adminService.deleteSubject(
-                id,
-                admin
-        );
-
-        return ResponseEntity.ok(
-                "Subject deleted successfully"
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @PostMapping("/subjects/{subjectId}/weeks")
-    public ResponseEntity<WeekResponse> createWeek(
-            @PathVariable Long subjectId,
-            @RequestBody WeekRequest request,
-            Authentication authentication
-    ){
-
-        UserEntity admin =
-                getCurrentAdmin(authentication);
-
-        return ResponseEntity.ok(
-                adminService.createWeek(
-                        subjectId,
-                        request,
-                        admin
-                )
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/subjects/{subjectId}/weeks")
-    public ResponseEntity<List<WeekResponse>> viewAllWeeks(
-            @PathVariable Long subjectId
-    ){
-
-        return ResponseEntity.ok(
-                adminService.viewAllWeeks(subjectId)
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @GetMapping("/weeks/{id}")
-    public ResponseEntity<WeekResponse> viewWeekById(
-            @PathVariable Long id
-    ){
-
-        return ResponseEntity.ok(
-                adminService.viewWeekById(id)
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @PutMapping("/weeks/{id}")
-    public ResponseEntity<WeekResponse> updateWeek(
-            @PathVariable Long id,
-            @RequestBody WeekUpdateRequest request,
-            Authentication authentication
-    ){
-
-        UserEntity admin =
-                getCurrentAdmin(authentication);
-
-        return ResponseEntity.ok(
-                adminService.updateWeek(
-                        id,
-                        request,
-                        admin
-                )
-        );
-    }
-    @PreAuthorize("hasRole('ADMIN')")
-    @DeleteMapping("/weeks/{id}")
-    public ResponseEntity<String> deleteWeek(
-            @PathVariable Long id,
-            Authentication authentication
-    ){
-
-        UserEntity admin =
-                getCurrentAdmin(authentication);
-
-        adminService.deleteWeek(
-                id,
-                admin
-        );
-
-        return ResponseEntity.ok(
-                "Week deleted successfully"
-        );
-    }
     @PreAuthorize("hasRole('ADMIN')")
     @GetMapping("/activity-logs")
     public ResponseEntity<List<ActivityLogResponse>>
@@ -337,6 +191,23 @@ public class AdminController {
                                 "Admin not found"
                         )
                 );
+    }
+    @GetMapping("/profile")
+    public ResponseEntity<UserProfileResponse> getProfile(
+            Authentication authentication) {
+
+        UserEntity admin =
+                userRepository
+                        .findByEmail(authentication.getName())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Admin not found"
+                                )
+                        );
+
+        return ResponseEntity.ok(
+                profileService.getUserProfile(admin)
+        );
     }
 
 }

@@ -8,6 +8,7 @@ import com.ptc.halo.enums.Role;
 import com.ptc.halo.repository.UserRepository;
 import com.ptc.halo.service.ActivityLogService;
 import com.ptc.halo.service.AuthService;
+import com.ptc.halo.service.ProfileService;
 import com.ptc.halo.service.SuperAdminService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,13 +23,13 @@ public class SuperAdminController {
     private final SuperAdminService superAdminService;
     private final ActivityLogService activityLogService;
     private final UserRepository userRepository;
+    private final ProfileService profileService;
 
-    public SuperAdminController(SuperAdminService superAdminService, ActivityLogService activityLogService, UserRepository userRepository) {
+    public SuperAdminController(SuperAdminService superAdminService, ActivityLogService activityLogService, UserRepository userRepository, ProfileService profileService) {
         this.superAdminService = superAdminService;
         this.activityLogService = activityLogService;
         this.userRepository = userRepository;
-
-
+        this.profileService = profileService;
     }
 
 
@@ -149,5 +150,23 @@ public class SuperAdminController {
                 )
         );
     }
+    @GetMapping("/profile")
+    public ResponseEntity<UserProfileResponse> getProfile(
+            Authentication authentication) {
+
+        UserEntity superAdmin =
+                userRepository
+                        .findByEmail(authentication.getName())
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Super Admin not found"
+                                )
+                        );
+
+        return ResponseEntity.ok(
+                profileService.getUserProfile(superAdmin)
+        );
+    }
+
 
 }

@@ -24,31 +24,6 @@ public class StudentMentorController {
         this.mentorService = mentorService;
         this.userRepository = userRepository;
     }
-
-    @PostMapping("/start/{moduleId}")
-    public ResponseEntity<MentorSessionResponse> startSession(
-            @PathVariable Long moduleId,
-            Authentication authentication) {
-
-        String email =
-                authentication.getName();
-
-        UserEntity student =
-                userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
-
-        MentorSessionResponse response =
-                mentorService.startSession(
-                        moduleId,
-                        student
-                );
-
-        return ResponseEntity.ok(response);
-    }
     @PostMapping("/message/{sessionId}")
     public ResponseEntity<MentorSessionResponse> sendMessage(
             @PathVariable Long sessionId,
