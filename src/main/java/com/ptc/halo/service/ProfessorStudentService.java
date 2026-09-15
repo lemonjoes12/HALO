@@ -1,8 +1,8 @@
 package com.ptc.halo.service;
 
-import com.ptc.halo.dtoResponse.ProfessorStudentProgressResponse;
-import com.ptc.halo.dtoResponse.ProfessorStudentResponse;
-import com.ptc.halo.dtoResponse.StudentSubjectResponse;
+import com.ptc.halo.dtoResponse.*;
+import com.ptc.halo.entity.AssessmentAttemptEntity;
+import com.ptc.halo.entity.StudentBadgeEntity;
 import com.ptc.halo.entity.StudentProfileEntity;
 import com.ptc.halo.entity.UserEntity;
 import com.ptc.halo.enums.Role;
@@ -194,5 +194,154 @@ public class ProfessorStudentService {
 
         return studentSubjectService
                 .getStudentSubjects(student);
+    }
+    public List<ProfessorStudentAssessmentResponse>
+    getStudentAssessmentHistory(Long userId) {
+
+        UserEntity student =
+                userRepository.findById(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
+
+        if (student.getRole() != Role.STUDENT) {
+            throw new RuntimeException(
+                    "User is not a student"
+            );
+        }
+
+
+        List<AssessmentAttemptEntity> attempts =
+                assessmentAttemptRepository
+                        .findByStudentIdAndSubmittedAtIsNotNullOrderBySubmittedAtDesc(
+                                student.getId()
+                        );
+
+
+        List<ProfessorStudentAssessmentResponse> responses =
+                new ArrayList<>();
+
+
+        for (AssessmentAttemptEntity attempt : attempts) {
+
+            ProfessorStudentAssessmentResponse response =
+                    new ProfessorStudentAssessmentResponse();
+
+
+            response.setAttemptId(
+                    attempt.getId()
+            );
+
+
+            response.setAssessmentTitle(
+                    attempt.getAssessment()
+                            .getTitle()
+            );
+
+
+            response.setWeekNumber(
+                    attempt.getAssessment()
+                            .getModule()
+                            .getWeek()
+                            .getWeekNumber()
+            );
+
+
+            response.setSubjectName(
+                    attempt.getAssessment()
+                            .getModule()
+                            .getWeek()
+                            .getSubject()
+                            .getSubjectName()
+            );
+
+
+            response.setScore(
+                    attempt.getScore()
+            );
+
+
+            response.setPassed(
+                    attempt.getPassed()
+            );
+
+
+            response.setStartedAt(
+                    attempt.getStartedAt()
+            );
+
+
+            response.setSubmittedAt(
+                    attempt.getSubmittedAt()
+            );
+
+
+            responses.add(response);
+        }
+
+
+        return responses;
+    }
+    public List<ProfessorStudentBadgeResponse>
+    getStudentBadges(Long userId) {
+
+        UserEntity student =
+                userRepository.findById(userId)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Student not found"
+                                )
+                        );
+
+        if (student.getRole() != Role.STUDENT) {
+            throw new RuntimeException(
+                    "User is not a student"
+            );
+        }
+
+
+        List<StudentBadgeEntity> badges =
+                studentBadgeRepository
+                        .findByStudentIdOrderByEarnedAtDesc(
+                                student.getId()
+                        );
+
+
+        List<ProfessorStudentBadgeResponse> responses =
+                new ArrayList<>();
+
+
+        for (StudentBadgeEntity badge : badges) {
+
+            ProfessorStudentBadgeResponse response =
+                    new ProfessorStudentBadgeResponse();
+
+            response.setId(
+                    badge.getId()
+            );
+
+            response.setBadgeType(
+                    badge.getBadgeType()
+            );
+
+            response.setBadgeName(
+                    badge.getBadgeName()
+            );
+
+            response.setDescription(
+                    badge.getDescription()
+            );
+
+            response.setEarnedAt(
+                    badge.getEarnedAt()
+            );
+
+            responses.add(response);
+        }
+
+
+        return responses;
     }
 }

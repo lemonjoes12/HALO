@@ -1,8 +1,6 @@
 package com.ptc.halo.controller;
 
-import com.ptc.halo.dtoResponse.ProfessorStudentProgressResponse;
-import com.ptc.halo.dtoResponse.ProfessorStudentResponse;
-import com.ptc.halo.dtoResponse.StudentSubjectResponse;
+import com.ptc.halo.dtoResponse.*;
 import com.ptc.halo.service.ProfessorStudentService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -54,6 +52,28 @@ public class ProfessorStudentController {
         return ResponseEntity.ok(
                 professorStudentService
                         .getStudentSubjects(userId)
+        );
+    }
+    @PreAuthorize("hasRole('PROFESSOR')")
+    @GetMapping("/{userId}/assessments")
+    public ResponseEntity<List<ProfessorStudentAssessmentResponse>>
+    getStudentAssessmentHistory(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                professorStudentService
+                        .getStudentAssessmentHistory(userId)
+        );
+    }
+    @PreAuthorize("hasRole('PROFESSOR')")
+    @GetMapping("/{userId}/badges")
+    public ResponseEntity<List<ProfessorStudentBadgeResponse>>
+    getStudentBadges(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                professorStudentService
+                        .getStudentBadges(userId)
         );
     }
 }

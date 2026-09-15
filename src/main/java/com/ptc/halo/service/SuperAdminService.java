@@ -3,20 +3,22 @@ package com.ptc.halo.service;
 
 import com.ptc.halo.dtoRequest.AdminRequest;
 import com.ptc.halo.dtoRequest.UpdateAdminRequest;
-import com.ptc.halo.dtoResponse.AdminListResponse;
-import com.ptc.halo.dtoResponse.AdminResponse;
-import com.ptc.halo.dtoResponse.SuperAdminDashboardResponse;
-import com.ptc.halo.dtoResponse.UserReportResponse;
+import com.ptc.halo.dtoResponse.*;
+import com.ptc.halo.entity.ActivityLogEntity;
 import com.ptc.halo.entity.UserEntity;
 import com.ptc.halo.enums.ActivityType;
 import com.ptc.halo.enums.Role;
 import com.ptc.halo.enums.Status;
+import com.ptc.halo.repository.ActivityLogRepository;
 import com.ptc.halo.repository.UserRepository;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 
@@ -25,14 +27,16 @@ public class SuperAdminService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final ActivityLogService activityLogService;
+    private final ActivityLogRepository activityLogRepository;
 
     public SuperAdminService(
             UserRepository userRepository,
-            PasswordEncoder passwordEncoder, ActivityLogService activityLogService
+            PasswordEncoder passwordEncoder, ActivityLogService activityLogService, ActivityLogRepository activityLogRepository
     ){
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.activityLogService = activityLogService;
+        this.activityLogRepository = activityLogRepository;
     }
 
 
@@ -218,5 +222,73 @@ public class SuperAdminService {
         response.setInactiveUsers(userRepository.countByStatus(Status.INACTIVE));
 
         return response;
+    }
+    public List<SuperAdminAdminMonitoringResponse>
+    getAdminMonitoring() {
+
+        List<UserEntity> admins =
+                userRepository.findByRole(Role.ADMIN);
+
+        List<SuperAdminAdminMonitoringResponse> responses =
+                new ArrayList<>();
+
+
+        for (UserEntity admin : admins) {
+
+            long accountActivities =
+                    activityLogRepository
+                            .countByUserIdAndActivityType(
+                                    admin.getId(),
+                                    ActivityType.ACCOUNT
+                            );
+
+
+            Optional<ActivityLogEntity> latestActivity =
+                    activityLogRepository
+                            .findTopByUserIdOrderByCreatedAtDesc(
+                                    admin.getId()
+                            );
+
+
+            LocalDateTime lastActivity =
+                    latestActivity
+                            .map(ActivityLogEntity::getCreatedAt)
+                            .orElse(null);
+
+
+            SuperAdminAdminMonitoringResponse response =
+                    new SuperAdminAdminMonitoringResponse();
+
+
+            response.setAdminId(
+                    admin.getId()
+            );
+
+            response.setName(
+                    admin.getName()
+            );
+
+            response.setEmail(
+                    admin.getEmail()
+            );
+
+            response.setStatus(
+                    admin.getStatus()
+            );
+
+            response.setAccountActivities(
+                    accountActivities
+            );
+
+            response.setLastActivity(
+                    lastActivity
+            );
+
+
+            responses.add(response);
+        }
+
+
+        return responses;
     }
 }

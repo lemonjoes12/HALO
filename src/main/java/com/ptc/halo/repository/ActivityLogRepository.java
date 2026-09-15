@@ -6,6 +6,7 @@ import com.ptc.halo.enums.Role;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 public interface ActivityLogRepository
         extends JpaRepository<ActivityLogEntity, Long> {
@@ -25,5 +26,17 @@ public interface ActivityLogRepository
     findByUser_RoleAndActivityTypeOrderByCreatedAtDesc(
             Role role,
             ActivityType activityType
+    );
+    List<ActivityLogEntity>
+    findTop10ByOrderByCreatedAtDesc();
+
+    long countByUserIdAndActivityType(
+            Long userId,
+            ActivityType activityType
+    );
+
+    Optional<ActivityLogEntity>
+    findTopByUserIdOrderByCreatedAtDesc(
+            Long userId
     );
 }

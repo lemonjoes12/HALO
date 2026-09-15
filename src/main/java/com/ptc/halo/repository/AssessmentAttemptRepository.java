@@ -18,8 +18,16 @@ public interface AssessmentAttemptRepository
     long countByStudentIdAndPassedTrue(
             Long studentId
     );
+
+    long countByPassedTrue();
+
     Optional<AssessmentAttemptEntity>
     findTopByStudentIdAndSubmittedAtIsNotNullOrderBySubmittedAtDesc(
+            Long studentId
+    );
+
+    List<AssessmentAttemptEntity>
+    findByStudentIdAndSubmittedAtIsNotNullOrderBySubmittedAtDesc(
             Long studentId
     );
 }

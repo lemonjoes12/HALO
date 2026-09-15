@@ -23,4 +23,6 @@ public interface AiLearningModuleRepository
 
     @EntityGraph(attributePaths = {"files"})
     Optional<AiLearningModuleEntity> findWithFilesById(Long id);
+
+    long countByStatus(LessonStatus status);
 }

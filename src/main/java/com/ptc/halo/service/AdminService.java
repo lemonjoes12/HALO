@@ -12,6 +12,7 @@ import com.ptc.halo.repository.*;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -26,6 +27,7 @@ public class AdminService {
     private final StudentProfileRepository studentProfileRepository;
     private final SubjectRepository subjectRepository;
     private final WeekRepository weekRepository;
+    private final ActivityLogRepository activityLogRepository;
 
     public AdminService(
             UserRepository userRepository,
@@ -33,7 +35,7 @@ public class AdminService {
             PasswordEncoder passwordEncoder,
             ActivityLogService activityLogService,
             StudentProfileRepository studentProfileRepository,
-            SubjectRepository subjectRepository, WeekRepository weekRepository
+            SubjectRepository subjectRepository, WeekRepository weekRepository, ActivityLogRepository activityLogRepository
     ){
 
         this.userRepository = userRepository;
@@ -43,6 +45,7 @@ public class AdminService {
         this.studentProfileRepository = studentProfileRepository;
         this.subjectRepository = subjectRepository;
         this.weekRepository = weekRepository;
+        this.activityLogRepository = activityLogRepository;
     }
 
 
@@ -640,6 +643,55 @@ public class AdminService {
                         + ": "
                         + weekTitle
         );
+    }
+    public List<AdminRecentActivityResponse>
+    getRecentActivity() {
+
+        List<ActivityLogEntity> logs =
+                activityLogRepository
+                        .findTop10ByOrderByCreatedAtDesc();
+
+        List<AdminRecentActivityResponse> responses =
+                new ArrayList<>();
+
+
+        for (ActivityLogEntity log : logs) {
+
+            AdminRecentActivityResponse response =
+                    new AdminRecentActivityResponse();
+
+            response.setId(
+                    log.getId()
+            );
+
+            response.setUserName(
+                    log.getUser().getName()
+            );
+
+            response.setEmail(
+                    log.getUser().getEmail()
+            );
+
+            response.setRole(
+                    log.getUser().getRole()
+            );
+
+            response.setActivityType(
+                    log.getActivityType()
+            );
+
+            response.setAction(
+                    log.getAction()
+            );
+
+            response.setCreatedAt(
+                    log.getCreatedAt()
+            );
+
+            responses.add(response);
+        }
+
+        return responses;
     }
 
 }

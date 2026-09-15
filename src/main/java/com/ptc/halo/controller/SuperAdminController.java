@@ -4,6 +4,7 @@ import com.ptc.halo.dtoRequest.AdminRequest;
 import com.ptc.halo.dtoRequest.UpdateAdminRequest;
 import com.ptc.halo.dtoResponse.*;
 import com.ptc.halo.entity.UserEntity;
+import com.ptc.halo.enums.Role;
 import com.ptc.halo.repository.UserRepository;
 import com.ptc.halo.service.ActivityLogService;
 import com.ptc.halo.service.AuthService;
@@ -116,14 +117,7 @@ public class SuperAdminController {
                 superAdminService.getUserReport()
         );
     }
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
-    @GetMapping("/activity-logs")
-    public ResponseEntity<List<ActivityLogResponse>> getActivityLogs(){
 
-        return ResponseEntity.ok(
-                activityLogService.getAllLogs()
-        );
-    }
     private UserEntity getCurrentSuperAdmin(
             Authentication authentication) {
 
@@ -134,6 +128,26 @@ public class SuperAdminController {
                                 "Super Admin not found"
                         )
                 );
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping("/admins/monitoring")
+    public ResponseEntity<List<SuperAdminAdminMonitoringResponse>>
+    getAdminMonitoring() {
+
+        return ResponseEntity.ok(
+                superAdminService.getAdminMonitoring()
+        );
+    }
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @GetMapping("/activity-logs")
+    public ResponseEntity<List<ActivityLogResponse>> getActivityLogs(){
+
+        return ResponseEntity.ok(
+                activityLogService.getLogs(
+                        Role.ADMIN,
+                        null
+                )
+        );
     }
 
 }
