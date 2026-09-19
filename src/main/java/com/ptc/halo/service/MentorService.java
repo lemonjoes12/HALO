@@ -123,6 +123,10 @@ public class MentorService {
         for (MentorMessageEntity message :
                 conversationContext) {
 
+            if (message.getId().equals(studentMessageEntity.getId())) {
+                continue;
+            }
+
             conversationText
                     .append(message.getSender())
                     .append(": ")
@@ -462,11 +466,15 @@ public class MentorService {
                     The student should feel that they are LEARNING WITH HALO,
                     not being QUESTIONED BY HALO.
    
-            Student's latest answer:
-
-            %s
-
-            Respond as HALO.
+                RECENT CONVERSATION:
+                
+                                 %s
+                
+                                 Student's latest message:
+                
+                                 %s
+                
+                                 Respond as HALO.
             """.formatted(
                 module.getLessonText(),
                 module.getGeneratedObjectives(),

@@ -1,5 +1,8 @@
 package com.ptc.halo.security;
 
+import com.ptc.halo.entity.UserSessionEntity;
+import com.ptc.halo.enums.SessionStatus;
+import com.ptc.halo.repository.UserSessionRepository;
 import com.ptc.halo.service.CustomUserDetailsService;
 
 import jakarta.servlet.FilterChain;
@@ -15,6 +18,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 
 @Component
@@ -23,14 +27,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final CustomUserDetailsService userDetailsService;
+    private final UserSessionRepository userSessionRepository;
 
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
-            CustomUserDetailsService userDetailsService
+            CustomUserDetailsService userDetailsService, UserSessionRepository userSessionRepository
     ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.userSessionRepository = userSessionRepository;
     }
 
     @Override
@@ -44,9 +50,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String authHeader = request.getHeader("Authorization");
 
 
-        if(authHeader == null || !authHeader.startsWith("Bearer ")) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
 
-            filterChain.doFilter(request,response);
+            filterChain.doFilter(request, response);
             return;
         }
 
@@ -54,31 +60,89 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String token = authHeader.substring(7);
 
 
-        String email = jwtService.extractUsername(token);
+        try {
 
+            String email =
+                    jwtService.extractUsername(token);
 
-        if(email != null &&
-                SecurityContextHolder.getContext().getAuthentication() == null) {
+            String sessionId =
+                    jwtService.extractSessionId(token);
 
+            if (email != null &&
+                    sessionId != null &&
+                    SecurityContextHolder
+                            .getContext()
+                            .getAuthentication() == null) {
 
-            UserDetails userDetails =
-                    userDetailsService.loadUserByUsername(email);
+                UserSessionEntity session =
+                        userSessionRepository
+                                .findBySessionId(sessionId)
+                                .orElse(null);
 
+                if (session == null) {
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            userDetails,
-                            null,
-                            userDetails.getAuthorities()
+                    response.setStatus(
+                            HttpServletResponse.SC_UNAUTHORIZED
+                    );
+                    return;
+                }
+
+                if (session.getStatus()
+                        != SessionStatus.ACTIVE) {
+
+                    response.setStatus(
+                            HttpServletResponse.SC_UNAUTHORIZED
+                    );
+                    return;
+                }
+
+                LocalDateTime now =
+                        LocalDateTime.now();
+
+                if (session.getExpiresAt()
+                        .isBefore(now)) {
+
+                    session.setStatus(
+                            SessionStatus.EXPIRED
                     );
 
+                    userSessionRepository.save(session);
 
-            SecurityContextHolder.getContext()
-                    .setAuthentication(authentication);
+                    response.setStatus(
+                            HttpServletResponse.SC_UNAUTHORIZED
+                    );
+                    return;
+                }
+
+                UserDetails userDetails =
+                        userDetailsService
+                                .loadUserByUsername(email);
+
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                userDetails,
+                                null,
+                                userDetails.getAuthorities()
+                        );
+
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authentication);
+
+                session.setLastActivity(now);
+
+                userSessionRepository.save(session);
+            }
+
+        } catch (Exception e) {
+
+            response.setStatus(
+                    HttpServletResponse.SC_UNAUTHORIZED
+            );
+
+            return;
         }
 
-
-        filterChain.doFilter(request,response);
-
+        filterChain.doFilter(request, response);
     }
 }

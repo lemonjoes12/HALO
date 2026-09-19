@@ -9,6 +9,7 @@ import com.ptc.halo.repository.UserRepository;
 import com.ptc.halo.service.ActivityLogService;
 import com.ptc.halo.service.AdminService;
 import com.ptc.halo.service.ProfileService;
+import com.ptc.halo.service.UserSessionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -23,13 +24,15 @@ public class AdminController {
     private final UserRepository userRepository;
     private final ActivityLogService activityLogService;
     private final ProfileService profileService;
+    private final UserSessionService userSessionService;
 
 
-    public AdminController(AdminService adminService, UserRepository userRepository, ActivityLogService activityLogService, ProfileService profileService) {
+    public AdminController(AdminService adminService, UserRepository userRepository, ActivityLogService activityLogService, ProfileService profileService, UserSessionService userSessionService) {
         this.adminService = adminService;
         this.userRepository = userRepository;
         this.activityLogService = activityLogService;
         this.profileService = profileService;
+        this.userSessionService = userSessionService;
     }
 
     @PreAuthorize("hasRole('ADMIN')")
@@ -179,6 +182,38 @@ public class AdminController {
                         role,
                         activityType
                 )
+        );
+    }
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/sessions")
+    public ResponseEntity<List<UserSessionResponse>>
+    getAllSessions() {
+
+        return ResponseEntity.ok(
+                userSessionService.getAllSessions()
+        );
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/sessions/active")
+    public ResponseEntity<List<UserSessionResponse>>
+    getActiveSessions() {
+
+        return ResponseEntity.ok(
+                userSessionService.getActiveSessions()
+        );
+    }
+
+
+    @PreAuthorize("hasRole('ADMIN')")
+    @GetMapping("/sessions/user/{userId}")
+    public ResponseEntity<List<UserSessionResponse>>
+    getUserSessions(
+            @PathVariable Long userId) {
+
+        return ResponseEntity.ok(
+                userSessionService.getUserSessions(userId)
         );
     }
     private UserEntity getCurrentAdmin(

@@ -6,16 +6,22 @@ import com.ptc.halo.dtoResponse.LoginResponse;
 import com.ptc.halo.dtoResponse.StudentResponse;
 import com.ptc.halo.entity.StudentProfileEntity;
 import com.ptc.halo.entity.UserEntity;
+import com.ptc.halo.entity.UserSessionEntity;
 import com.ptc.halo.enums.Role;
+import com.ptc.halo.enums.SessionStatus;
 import com.ptc.halo.enums.Status;
 import com.ptc.halo.repository.StudentProfileRepository;
 import com.ptc.halo.repository.UserRepository;
+import com.ptc.halo.repository.UserSessionRepository;
 import com.ptc.halo.security.JwtService;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.time.LocalDateTime;
+import java.util.UUID;
 
 
 @Service
@@ -26,6 +32,7 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserSessionRepository userSessionRepository;
 
 
     public AuthService(
@@ -33,7 +40,7 @@ public class AuthService {
             StudentProfileRepository studentProfileRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
-            JwtService jwtService
+            JwtService jwtService, UserSessionRepository userSessionRepository
     ) {
 
         this.userRepository = userRepository;
@@ -42,6 +49,7 @@ public class AuthService {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
 
+        this.userSessionRepository = userSessionRepository;
     }
 
 
@@ -124,8 +132,33 @@ public class AuthService {
 
 
 
+        String sessionId =
+                UUID.randomUUID().toString();
+
+        LocalDateTime now =
+                LocalDateTime.now();
+
+        UserSessionEntity session =
+                new UserSessionEntity();
+
+        session.setUser(user);
+        session.setSessionId(sessionId);
+        session.setLoginTime(now);
+        session.setLastActivity(now);
+        session.setExpiresAt(
+                now.plusHours(24)
+        );
+        session.setStatus(
+                SessionStatus.ACTIVE
+        );
+
+        userSessionRepository.save(session);
+
         String token =
-                jwtService.generateToken(user.getEmail());
+                jwtService.generateToken(
+                        user.getEmail(),
+                        sessionId
+                );
 
         LoginResponse response = new LoginResponse();
 

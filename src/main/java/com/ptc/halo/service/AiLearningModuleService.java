@@ -29,4 +29,14 @@ public class AiLearningModuleService {
                         )
                 );
     }
+    public AiLearningModuleEntity getModuleByWeekId(Long weekId) {
+
+        return aiLearningModuleRepository
+                .findByWeekId(weekId)
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "AI Learning Module not found for this week"
+                        )
+                );
+    }
 }

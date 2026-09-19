@@ -14,10 +14,7 @@ import com.ptc.halo.repository.AiLearningFileRepository;
 import com.ptc.halo.repository.AiLearningModuleRepository;
 import com.ptc.halo.repository.UserRepository;
 import com.ptc.halo.repository.WeekRepository;
-import com.ptc.halo.service.ActivityLogService;
-import com.ptc.halo.service.AiGenerationService;
-import com.ptc.halo.service.AssessmentService;
-import com.ptc.halo.service.FileUploadService;
+import com.ptc.halo.service.*;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -39,12 +36,13 @@ public class AiLearningModuleController {
     private final AssessmentService assessmentService;
     private final ActivityLogService activityLogService;
     private final UserRepository userRepository;
+    private final AiLearningModuleService aiLearningModuleService;
 
     public AiLearningModuleController(
             AiLearningModuleRepository aiLearningModuleRepository,
             WeekRepository weekRepository,
             FileUploadService fileUploadService,
-            AiGenerationService aiGenerationService, AiLearningFileRepository aiLearningFileRepository, AssessmentService assessmentService, ActivityLogService activityLogService, UserRepository userRepository) {
+            AiGenerationService aiGenerationService, AiLearningFileRepository aiLearningFileRepository, AssessmentService assessmentService, ActivityLogService activityLogService, UserRepository userRepository, AiLearningModuleService aiLearningModuleService) {
 
         this.aiLearningModuleRepository = aiLearningModuleRepository;
         this.weekRepository = weekRepository;
@@ -54,6 +52,7 @@ public class AiLearningModuleController {
         this.assessmentService = assessmentService;
         this.activityLogService = activityLogService;
         this.userRepository = userRepository;
+        this.aiLearningModuleService = aiLearningModuleService;
     }
 
     @PostMapping(consumes = "multipart/form-data")
@@ -441,6 +440,17 @@ public class AiLearningModuleController {
                                 "Professor not found"
                         )
                 );
+    }
+    @GetMapping("/week/{weekId}")
+    public ResponseEntity<AiLearningModuleResponse> getModuleByWeek(
+            @PathVariable Long weekId) {
+
+        AiLearningModuleEntity module =
+                aiLearningModuleService.getModuleByWeekId(weekId);
+
+        return ResponseEntity.ok(
+                convertToResponse(module)
+        );
     }
 
 }

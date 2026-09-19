@@ -36,12 +36,32 @@ public class JwtService {
                 .signWith(getSigningKey())
                 .compact();
     }
+    public String generateToken(
+            String email,
+            String sessionId) {
+
+        return Jwts.builder()
+                .subject(email)
+                .claim("sessionId", sessionId)
+                .issuedAt(new Date())
+                .expiration(
+                        new Date(System.currentTimeMillis()
+                                + 1000 * 60 * 60 * 24)
+                )
+                .signWith(getSigningKey())
+                .compact();
+    }
 
 
     public String extractUsername(String token) {
 
         return extractAllClaims(token).getSubject();
 
+    }
+    public String extractSessionId(String token) {
+
+        return extractAllClaims(token)
+                .get("sessionId", String.class);
     }
 
 

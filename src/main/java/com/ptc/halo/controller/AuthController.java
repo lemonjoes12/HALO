@@ -5,8 +5,11 @@ import com.ptc.halo.dtoResponse.LoginResponse;
 import com.ptc.halo.dtoResponse.StudentResponse;
 import com.ptc.halo.entity.UserEntity;
 import com.ptc.halo.repository.UserRepository;
+import com.ptc.halo.security.JwtService;
 import com.ptc.halo.service.AuthService;
 import com.ptc.halo.service.PasswordResetService;
+import com.ptc.halo.service.UserSessionService;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.coyote.Response;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,12 +25,16 @@ public class AuthController {
     private final AuthService authService;
     private final PasswordResetService passwordResetService;
     private final UserRepository userRepository;
+    private final UserSessionService userSessionService;
+    private final JwtService jwtService;
 
 
-    public AuthController(AuthService authService, PasswordResetService passwordResetService, UserRepository userRepository) {
+    public AuthController(AuthService authService, PasswordResetService passwordResetService, UserRepository userRepository, UserSessionService userSessionService, JwtService jwtService) {
         this.authService = authService;
         this.passwordResetService = passwordResetService;
         this.userRepository = userRepository;
+        this.userSessionService = userSessionService;
+        this.jwtService = jwtService;
     }
 
 
@@ -43,6 +50,33 @@ public class AuthController {
     LoginResponse response = authService.login(loginRequest);
 
     return ResponseEntity.ok(response);
+    }
+    @PostMapping("/logout")
+    public ResponseEntity<String> logout(
+            HttpServletRequest request) {
+
+        String authHeader =
+                request.getHeader("Authorization");
+
+        if (authHeader == null ||
+                !authHeader.startsWith("Bearer ")) {
+
+            throw new RuntimeException(
+                    "Authorization token is required"
+            );
+        }
+
+        String token =
+                authHeader.substring(7);
+
+        String sessionId =
+                jwtService.extractSessionId(token);
+
+        userSessionService.logout(sessionId);
+
+        return ResponseEntity.ok(
+                "Logged out successfully"
+        );
     }
     @PostMapping("/forgot-password")
     public ResponseEntity<String> forgotPassword(

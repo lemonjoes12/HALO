@@ -1,5 +1,6 @@
 package com.ptc.halo.service;
 
+import com.ptc.halo.dtoRequest.ProfessorProfileUpdateRequest;
 import com.ptc.halo.dtoResponse.ProfessorProfileResponse;
 import com.ptc.halo.dtoResponse.StudentProfileResponse;
 import com.ptc.halo.dtoResponse.UserProfileResponse;
@@ -8,6 +9,8 @@ import com.ptc.halo.entity.StudentProfileEntity;
 import com.ptc.halo.entity.UserEntity;
 import com.ptc.halo.repository.ProfessorRepository;
 import com.ptc.halo.repository.StudentProfileRepository;
+import com.ptc.halo.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -15,13 +18,15 @@ public class ProfileService {
 
     private final StudentProfileRepository studentProfileRepository;
     private final ProfessorRepository professorRepository;
+    private final UserRepository userRepository;
 
     public ProfileService(
             StudentProfileRepository studentProfileRepository,
-            ProfessorRepository professorRepository) {
+            ProfessorRepository professorRepository, UserRepository userRepository) {
 
         this.studentProfileRepository = studentProfileRepository;
         this.professorRepository = professorRepository;
+        this.userRepository = userRepository;
     }
 
 
@@ -80,6 +85,40 @@ public class ProfileService {
         );
 
         return response;
+    }
+    @Transactional
+    public ProfessorProfileResponse updateProfessorProfile(
+            UserEntity user,
+            ProfessorProfileUpdateRequest request) {
+
+        String name = request.getName();
+        String email = request.getEmail();
+
+        if (name == null || name.isBlank()) {
+            throw new RuntimeException("Name is required");
+        }
+
+        if (email == null || email.isBlank()) {
+            throw new RuntimeException("Email is required");
+        }
+
+        String normalizedEmail = email.trim().toLowerCase();
+
+        if (!normalizedEmail.equalsIgnoreCase(user.getEmail())
+                && userRepository.existsByEmail(normalizedEmail)) {
+
+            throw new RuntimeException(
+                    "Email is already being used by another account"
+            );
+        }
+
+        user.setName(name.trim());
+        user.setEmail(normalizedEmail);
+
+        UserEntity updatedUser =
+                userRepository.save(user);
+
+        return getProfessorProfile(updatedUser);
     }
 
 
