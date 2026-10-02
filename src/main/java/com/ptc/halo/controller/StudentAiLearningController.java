@@ -7,16 +7,28 @@ import com.ptc.halo.repository.AiLearningModuleRepository;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.stream.Collectors;
+import com.ptc.halo.service.StudentLessonAccessService;
+import com.ptc.halo.service.StudentLearningProgressionService;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 @RestController
+@PreAuthorize("hasRole('STUDENT')")
 @RequestMapping("/api/student/ai-learning-modules")
+@Transactional(readOnly = true)
 public class StudentAiLearningController {
+    private final StudentLessonAccessService access;
+    private final StudentLearningProgressionService progression;
 
     private final AiLearningModuleRepository aiLearningModuleRepository;
 
     public StudentAiLearningController(
-            AiLearningModuleRepository aiLearningModuleRepository) {
+            AiLearningModuleRepository aiLearningModuleRepository, StudentLessonAccessService access, StudentLearningProgressionService progression) {
+        this.access = access;
+        this.progression = progression;
 
         this.aiLearningModuleRepository =
                 aiLearningModuleRepository;
@@ -24,19 +36,16 @@ public class StudentAiLearningController {
 
     @GetMapping("/week/{weekId}")
     public ResponseEntity<AiLearningModuleResponse> getApprovedLesson(
-            @PathVariable Long weekId) {
+            @PathVariable("weekId") Long weekId, Authentication authentication) {
 
         AiLearningModuleEntity module =
                 aiLearningModuleRepository
-                        .findByWeekIdAndStatus(
-                                weekId,
-                                LessonStatus.APPROVED
-                        )
+                        .findByWeekId(weekId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Approved lesson not found"
-                                )
+                                new ResponseStatusException(HttpStatus.NOT_FOUND, "MODULE_NOT_FOUND")
                         );
+
+        progression.validateModuleAccess(module.getId(), access.requireStudent(authentication));
 
         return ResponseEntity.ok(
                 convertToResponse(module)

@@ -11,13 +11,19 @@ import com.ptc.halo.repository.StudentModuleProgressRepository;
 import com.ptc.halo.repository.SubjectRepository;
 import com.ptc.halo.repository.WeekRepository;
 import org.springframework.stereotype.Service;
+import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+import com.ptc.halo.enums.AiGenerationStatus;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
 @Service
+@Transactional(readOnly = true)
 public class StudentLearningProgressionService {
+    private final StudentLessonAccessService access;
 
     private final WeekRepository weekRepository;
 
@@ -34,7 +40,8 @@ public class StudentLearningProgressionService {
             WeekRepository weekRepository,
             SubjectRepository subjectRepository,
             AiLearningModuleRepository aiLearningModuleRepository,
-            StudentModuleProgressRepository studentModuleProgressRepository) {
+            StudentModuleProgressRepository studentModuleProgressRepository, StudentLessonAccessService access) {
+        this.access = access;
 
         this.weekRepository = weekRepository;
 
@@ -52,14 +59,14 @@ public class StudentLearningProgressionService {
             Long subjectId,
             UserEntity student) {
 
-        // Make sure subject exists
-        subjectRepository.findById(subjectId)
+        // Enforce the same subject eligibility used by the student subject list.
+        var subject = subjectRepository.findById(subjectId)
                 .orElseThrow(() ->
-                        new RuntimeException(
-                                "Subject not found"
-                        )
+                        new ResponseStatusException(HttpStatus.NOT_FOUND, "SUBJECT_NOT_FOUND")
                 );
 
+
+        access.validateSubject(student, subject);
 
         List<WeekEntity> weeks =
                 weekRepository
@@ -83,7 +90,7 @@ public class StudentLearningProgressionService {
                             .findByWeekIdAndStatus(
                                     week.getId(),
                                     LessonStatus.APPROVED
-                            );
+                            ).filter(module -> module.getAiGenerationStatus() == AiGenerationStatus.COMPLETED);
 
 
             boolean lessonAvailable =
@@ -201,7 +208,7 @@ public class StudentLearningProgressionService {
                         .findByWeekIdAndStatus(
                                 previousWeek.getId(),
                                 LessonStatus.APPROVED
-                        );
+                        ).filter(module -> module.getAiGenerationStatus() == AiGenerationStatus.COMPLETED);
 
 
         if (previousModuleOptional.isEmpty()) {
@@ -240,13 +247,13 @@ public class StudentLearningProgressionService {
                 aiLearningModuleRepository
                         .findById(moduleId)
                         .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Learning module not found"
-                                )
+                                new ResponseStatusException(HttpStatus.NOT_FOUND, "MODULE_NOT_FOUND")
                         );
 
         WeekEntity currentWeek =
                 module.getWeek();
+
+        access.validatePublished(module, student);
 
         Long subjectId =
                 currentWeek
@@ -274,9 +281,7 @@ public class StudentLearningProgressionService {
 
         if (currentIndex == -1) {
 
-            throw new RuntimeException(
-                    "Week not found in subject"
-            );
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "MODULE_WEEK_NOT_FOUND");
         }
 
         // First week is always unlocked
@@ -295,9 +300,7 @@ public class StudentLearningProgressionService {
 
         if (!previousCompleted) {
 
-            throw new RuntimeException(
-                    "This week is locked. Complete the previous week first."
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "PREVIOUS_WEEK_INCOMPLETE");
         }
     }
 }

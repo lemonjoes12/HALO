@@ -21,6 +21,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
+import com.ptc.halo.security.ApiSecurityErrors;
 
 @Configuration
 @EnableMethodSecurity
@@ -77,6 +78,11 @@ public class SecurityConfig {
                         UsernamePasswordAuthenticationFilter.class
                 )
 
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((request, response, exception) ->
+                                ApiSecurityErrors.write(request, response, 401, "AUTHENTICATION_REQUIRED"))
+                        .accessDeniedHandler((request, response, exception) ->
+                                ApiSecurityErrors.write(request, response, 403, "INVALID_ROLE_OR_ACCESS")))
                 .authorizeHttpRequests(auth -> auth
 
                         .requestMatchers(

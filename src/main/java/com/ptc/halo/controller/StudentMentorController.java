@@ -4,42 +4,35 @@ import com.ptc.halo.dtoRequest.MentorMessageRequest;
 import com.ptc.halo.dtoResponse.MentorConversationResponse;
 import com.ptc.halo.dtoResponse.MentorSessionResponse;
 import com.ptc.halo.entity.UserEntity;
-import com.ptc.halo.repository.UserRepository;
+import com.ptc.halo.service.StudentLessonAccessService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import com.ptc.halo.service.MentorService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
+@PreAuthorize("hasRole('STUDENT')")
 @RequestMapping("/api/student/mentor")
 public class StudentMentorController {
 
     private final MentorService mentorService;
-    private final UserRepository userRepository;
+    private final StudentLessonAccessService access;
 
     public StudentMentorController(
             MentorService mentorService,
-            UserRepository userRepository) {
+            StudentLessonAccessService access) {
 
         this.mentorService = mentorService;
-        this.userRepository = userRepository;
+        this.access = access;
     }
     @PostMapping("/message/{sessionId}")
     public ResponseEntity<MentorSessionResponse> sendMessage(
-            @PathVariable Long sessionId,
+            @PathVariable("sessionId") Long sessionId,
             @RequestBody MentorMessageRequest request,
             Authentication authentication) {
 
-        String email =
-                authentication.getName();
-
-        UserEntity student =
-                userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
+        UserEntity student = access.requireStudent(authentication);
 
         MentorSessionResponse response =
                 mentorService.sendMessage(
@@ -52,19 +45,10 @@ public class StudentMentorController {
     }
     @GetMapping("/session/{sessionId}")
     public ResponseEntity<MentorConversationResponse> getConversation(
-            @PathVariable Long sessionId,
+            @PathVariable("sessionId") Long sessionId,
             Authentication authentication) {
 
-        String email =
-                authentication.getName();
-
-        UserEntity student =
-                userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
+        UserEntity student = access.requireStudent(authentication);
 
         MentorConversationResponse response =
                 mentorService.getConversation(
@@ -76,19 +60,10 @@ public class StudentMentorController {
     }
     @PostMapping("/open/{moduleId}")
     public ResponseEntity<MentorConversationResponse> openSession(
-            @PathVariable Long moduleId,
+            @PathVariable("moduleId") Long moduleId,
             Authentication authentication) {
 
-        String email =
-                authentication.getName();
-
-        UserEntity student =
-                userRepository.findByEmail(email)
-                        .orElseThrow(() ->
-                                new RuntimeException(
-                                        "Student not found"
-                                )
-                        );
+        UserEntity student = access.requireStudent(authentication);
 
         MentorConversationResponse response =
                 mentorService.openSession(
